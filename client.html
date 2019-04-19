@@ -1,0 +1,218 @@
+<!doctype html>
+<html>
+  <head>
+    <title>MorseCode Chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      #disp { 	font-family: Courier Bold; color: #eee; background: #86c5da; padding: 10px; height: 80px; position: fixed; bottom: 0px; width: 100%; }
+      #toolbar {text-align:center; font-size:15pt}
+      #lettering {text-align:center; font-size:20pt;  }
+      form input { border: 0; padding: 7px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(44, 168, 209); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0;}
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee;}
+      #msgcontain {top: 20px; position: absolute; height: 80%; width: 100%; overflow: scroll;}
+    </style>
+  </head>
+  <script src= "/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  <script>
+    $(function () {
+      //TODO: End of letter, space, end of transmission
+        var socket = io();
+        socket.emit('register');
+        socket.on('register', function(msg){
+          $('#messages').append($('<li>').text("Hello user-" + msg["id"]));
+        });
+        var list = [];
+        const tol = 800;
+        var prevTime = 0;
+        var keyStartDate = 0;
+        var keyDown = false;
+        $('#key').keydown(function(e){
+          if(!keyDown) {
+            e.preventDefault(); // possibly omit
+            keyStartDate = new Date();
+            keyDown = true;
+          }
+        });
+
+        $('#key').keyup(function(e) {
+            e.preventDefault(); //page wont reload
+            keyEndDate = new Date();
+            if (keyEndDate - keyStartDate > 200){ //tol for _ vs .
+              List(keyStartDate, keyEndDate, "_");
+            } else {
+              List(keyStartDate, keyEndDate, ".");
+            }
+            // $('#m').val('');
+            keyDown = false;
+        });
+
+        socket.on('morse', function(msg){
+          $('#messages').append($('<li>').text("user-" + msg["id"] +": " + msg["letter"]));
+          var element = document.getElementById("msgcontain");
+          element.scrollTop = element.scrollHeight;
+        });
+        function List(starttime, endtime, type) {
+            if (prevTime == 0 || starttime - prevTime < tol) { // check for 60 sec edge case
+              list.push(type);
+            } else {
+              //send list
+              letter = getLetter(list);
+              if (letter != "") {
+                socket.emit('morse', {
+                  "letter": letter,
+                });
+              }
+              
+              list = [type];
+            }
+          prevTime = endtime - 0;
+          return false;
+        };
+          
+        setInterval(function(){
+          if (list.length == 6 || keyDown == false && prevTime != 0 && new Date() - prevTime > tol) {
+            letter = getLetter(list);
+            if (letter != "") {
+            socket.emit('morse', {
+                "letter": letter,
+            });
+           }
+            prevTime = 0;
+            list = [];
+          }
+          $('#toolbar').text(list.join(" "));
+          $('#lettering').text(getLetter(list))
+        },10);
+
+        function getLetter(list) {
+          switch(list.join("")) {
+                case "._":
+                  letter = "A";
+                  break;
+                case "_...":
+                  letter = "B";
+                  break;
+                case "_._.":
+                  letter = "C";
+                  break;
+                case "_..":
+                  letter = "D";
+                  break;
+                case ".":
+                  letter = "E";
+                  break;
+                case ".._.":
+                  letter = "F";
+                  break;
+                case "__.":
+                  letter = "G";
+                  break;
+                case "....":
+                  letter = "H";
+                  break;
+                case "..":
+                  letter = "I";
+                  break;
+                case ".___":
+                  letter = "J";
+                  break;
+                case "_._":
+                  letter = "K";
+                  break;
+                case "._..":
+                  letter = "L";
+                  break;
+                case "__":
+                  letter = "M";
+                  break;
+                case "_.":
+                  letter = "N";
+                  break;
+                case "___":
+                  letter = "O";
+                  break;
+                case ".__.":
+                  letter = "P";
+                  break;
+                case "__._":
+                  letter = "Q";
+                  break;
+                case "._.":
+                  letter = "R";
+                  break;
+                case "...":
+                  letter = "S";
+                  break;
+                case "_":
+                  letter = "T";
+                  break;
+                case ".._":
+                  letter = "U";
+                  break;
+                case "..._":
+                  letter = "V";
+                  break;
+                case ".__":
+                  letter = "W";
+                  break;
+                case "_.._":
+                  letter = "X";
+                  break;
+                case "_.__":
+                  letter = "Y";
+                  break;
+                case "__..":
+                  letter = "Z";
+                  break;
+                case ".____":
+                  letter = "1";
+                  break;
+                case "..___":
+                  letter = "2";
+                  break;
+                case "...__":
+                  letter = "3";
+                  break;
+                case "...._":
+                  letter = "4";
+                  break;
+                case ".....":
+                  letter = "5";
+                  break;
+                case "_....":
+                  letter = "6";
+                  break;
+                case "__...":
+                  letter = "7";
+                  break;
+                  case "___..":
+                  letter = "8";
+                  break;
+                case "____.":
+                  letter = "9";
+                  break;
+                case "_____":
+                  letter = "0";
+                  break;
+                default:
+                  letter = "";
+              }
+              return letter;
+            }
+
+    });
+  </script>
+  <body id = "key">
+    <div id = "msgcontain">
+      <ul id="messages"></ul>
+    </div>
+    <div id="disp">
+      <div id = "lettering"></div>
+      <div id = "toolbar"></div>
+  </body>
+</html>
