@@ -12,7 +12,10 @@ io.on('connection', function(socket){
 	let id;
 	socket.on('register', function(){
 		id = new Person().online(people);
-		io.emit('register', {
+		socket.emit('register', {
+			"id": id
+		});
+		socket.broadcast.emit('newuser', {
 			"id": id
 		});
 	});
@@ -25,6 +28,11 @@ io.on('connection', function(socket){
 	 socket.on('disconnect', function() {
 		console.log('user: ' + id + ' disconnected');
 	});
+	socket.on('newline', function() {
+		io.emit('newline', {
+			"id": id
+		})
+	})
 });
 
 http.listen(3000, function(){
